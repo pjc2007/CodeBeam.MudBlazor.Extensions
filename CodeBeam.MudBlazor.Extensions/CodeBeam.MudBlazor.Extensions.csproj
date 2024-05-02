@@ -5,14 +5,14 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<Version>6.9.2</Version>
+		<Version>7.0.0-preview.1</Version>
 		<Title>CodeBeam.MudBlazor.Extensions</Title>
 		<Authors>CodeBeam</Authors>
 		<Company>CodeBeam</Company>
 		<Description>MudBlazor extension components from contributors. Includes 30+ components and utilities.</Description>
 		<Copyright>CodeBeam OpenSource MIT</Copyright>
 		<PackageIcon>Mud_Secondary.png</PackageIcon>
-		<PackageProjectUrl>https://codebeam-mudextensions.pages.dev/</PackageProjectUrl>
+		<PackageProjectUrl>https://mudextensions.codebeam.org/</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/CodeBeamOrg/CodeBeam.MudBlazor.Extensions</RepositoryUrl>
 		<PackageTags>Blazor; MudBlazor; Component; Extension; Material3; Animate; Stepper; ComboBox; Select; List; Loading; Gallery; ChipField; Transfer; Barcode; QR; SpeedDial; RangeSlider; Teleport</PackageTags>
 		<RootNamespace>MudExtensions</RootNamespace>
