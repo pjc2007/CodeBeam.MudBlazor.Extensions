@@ -1295,6 +1295,7 @@ namespace MudExtensions
         /// <param name="deselect"></param>
         protected void SelectAllItems(bool? deselect = false)
         {
+            // Select all the components currently rendered
             var items = CollectAllMudListItems(true);
             if (deselect == true)
             {
@@ -1322,7 +1323,20 @@ namespace MudExtensions
             var selectedItems = items.Where(x => x.IsSelected).Select(y => y.Value).ToHashSet(_comparer);
             if (ItemCollection != null)
             {
-                SelectedValues = deselect == true ? Enumerable.Empty<T?>() : selectedItems;
+                var searchedItems = GetSearchedItems();
+                // Without virtualization, we are sure that selectedItems will reflect the correct
+                // state after the select/deselect all
+
+                // With virtualization, we can't make that assumption. selectedItems only contains the
+                // rendered items
+                if (Virtualize && deselect is null or false && searchedItems != null && searchedItems.Count != selectedItems.Count)
+                {
+                    SelectedValues = searchedItems.ToHashSet(_comparer);
+                }
+                else
+                {
+                    SelectedValues = deselect == true ? Enumerable.Empty<T?>() : selectedItems;
+                }
             }
             else
             {
