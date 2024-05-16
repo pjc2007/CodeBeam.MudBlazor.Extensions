@@ -107,13 +107,6 @@ namespace MudExtensions
         public ButtonVariant ButtonVariant { get; set; } = ButtonVariant.Button;
 
         /// <summary>
-        /// Title of the icon used for accessibility. Only for IconButton and Fab variants.
-        /// </summary>
-        [Parameter]
-        [Category(CategoryTypes.Button.Behavior)]
-        public string? Title { get; set; }
-
-        /// <summary>
         /// The variant to use.
         /// </summary>
         [Parameter]
