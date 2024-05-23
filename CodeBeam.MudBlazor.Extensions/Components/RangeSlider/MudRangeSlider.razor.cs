@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Components;
 using MudBlazor;
+using MudBlazor.State;
 using MudBlazor.Utilities;
 using System.Globalization;
+using System.Numerics;
 
 namespace MudExtensions
 {
@@ -9,8 +11,78 @@ namespace MudExtensions
     /// Mud slider with range abilities.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public partial class MudRangeSlider<T> : MudComponentBase
+    public partial class MudRangeSlider<T> : MudComponentBase where T : struct, INumber<T>
     {
+
+        private readonly ParameterState<T> _value;
+        private readonly ParameterState<T> _upperValue;
+        private readonly ParameterState<T?> _slideableMin;
+        private readonly ParameterState<T?> _slideableMax;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public MudRangeSlider()
+        {
+            using var registerScope = CreateRegisterScope();
+            _value = registerScope.RegisterParameter<T>(nameof(Value))
+                .WithParameter(() => Value)
+                .WithEventCallback(() => ValueChanged)
+                .WithChangeHandler(OnValueParameterChanged);
+            _upperValue = registerScope.RegisterParameter<T>(nameof(UpperValue))
+                .WithParameter(() => UpperValue)
+                .WithEventCallback(() => UpperValueChanged)
+                .WithChangeHandler(OnUpperValueParameterChanged);
+            _slideableMin = registerScope.RegisterParameter<T?>(nameof(SlideableMin))
+                .WithParameter(() => SlideableMin)
+                .WithChangeHandler(OnSlideableMinChanged);
+            _slideableMax = registerScope.RegisterParameter<T?>(nameof(SlideableMax))
+                .WithParameter(() => SlideableMax)
+                .WithChangeHandler(OnSlideableMaxChanged);
+        }
+
+        private async Task OnValueParameterChanged()
+        {
+            if (Range && Convert.ToDecimal(_value.Value) + Convert.ToDecimal(MinDistance) >= Convert.ToDecimal(_upperValue.Value))
+            {
+                await _value.SetValueAsync(_upperValue.Value - MinDistance);
+            }
+
+            if (_slideableMin.Value != null && _value.Value < _slideableMin.Value)
+            {
+                await _value.SetValueAsync((T)_slideableMin.Value);
+            }
+        }
+
+        private async Task OnUpperValueParameterChanged()
+        {
+            if (Range && Convert.ToDecimal(_upperValue.Value) - Convert.ToDecimal(MinDistance) <= Convert.ToDecimal(_value.Value))
+            {
+                await _upperValue.SetValueAsync(_value.Value + MinDistance);
+            }
+
+            if (_slideableMax.Value != null && _slideableMax.Value < _upperValue.Value)
+            {
+                await _upperValue.SetValueAsync((T)_slideableMax.Value);
+            }
+        }
+
+        private async Task OnSlideableMinChanged()
+        {
+            if (_slideableMin.Value != null && _value.Value <_slideableMin.Value)
+            {
+                await _value.SetValueAsync((T)_slideableMin.Value);
+            }
+        }
+
+        private async Task OnSlideableMaxChanged()
+        {
+            if (_slideableMax.Value != null && _slideableMax.Value < _upperValue.Value)
+            {
+                await _upperValue.SetValueAsync((T)_slideableMax.Value);
+            }
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -22,33 +94,12 @@ namespace MudExtensions
                 .AddClass(Class)
                 .Build();
 
-        private string? _value;
-        private string? _min = "0";
-        private string? _max = "100";
-        private string? _step = "1";
-        private string? _minDistance = "1";
-
-        private bool _range = false;
-        private string? _upperValue;
-
-
-        /// <summary>
-        /// This will be set to true if the user sets the lower value to be greater than the upper value
-        /// or vice versa. It will detach the user from the slider and then the value will be reset
-        /// in the razor file.
-        /// </summary>
-        private bool _userInvalidatedRange;
-
         /// <summary>
         /// If this is a Range Slider
         /// </summary>
         [Parameter]
         [Category(CategoryTypes.Slider.Validation)]
-        public bool Range
-        {
-            get => _range;
-            set => _range = value;
-        }
+        public bool Range { get; set; } = true;
 
         /// <summary>
         /// Custom text for ValueLabel
@@ -69,23 +120,28 @@ namespace MudExtensions
         /// </summary>
         [Parameter]
         [Category(CategoryTypes.Slider.Validation)]
-        public T? Min
-        {
-            get => Converter.Get(_min);
-            set => _min = Converter.Set(value);
-        }
+        public T Min { get; set; } = T.Zero;
+
+        /// <summary>
+        /// The minimum value can slider thumb has.
+        /// </summary>
+        [Parameter]
+        [Category(CategoryTypes.Slider.Validation)]
+        public T? SlideableMin { get; set; }
 
         /// <summary>
         /// The maximum allowed value of the slider. Should not be equal to min.
         /// </summary>
-        /// 
         [Parameter]
         [Category(CategoryTypes.Slider.Validation)]
-        public T? Max
-        {
-            get => Converter.Get(_max);
-            set => _max = Converter.Set(value);
-        }
+        public T Max { get; set; } = T.CreateTruncating(100);
+
+        /// <summary>
+        /// The minimum value can slider thumb has.
+        /// </summary>
+        [Parameter]
+        [Category(CategoryTypes.Slider.Validation)]
+        public T? SlideableMax { get; set; }
 
         /// <summary>
         /// The minimum distance between the upper and lower values
@@ -93,11 +149,7 @@ namespace MudExtensions
         /// 
         [Parameter]
         [Category(CategoryTypes.Slider.Validation)]
-        public T? MinDistance
-        {
-            get => Converter.Get(_minDistance);
-            set => _minDistance = Converter.Set(value);
-        }
+        public T MinDistance { get; set; } = T.One;
 
         /// <summary>
         /// How many steps the slider should take on each move.
@@ -105,11 +157,7 @@ namespace MudExtensions
         /// 
         [Parameter]
         [Category(CategoryTypes.Slider.Validation)]
-        public T? Step
-        {
-            get => Converter.Get(_step);
-            set => _step = Converter.Set(value);
-        }
+        public T Step { get; set; } = T.One;
 
 		/// <summary>
 		/// If true, the slider will be disabled.
@@ -152,66 +200,26 @@ namespace MudExtensions
         /// <summary>
         /// Fires when value changed.
         /// </summary>
-        [Parameter] public EventCallback<T?> ValueChanged { get; set; }
+        [Parameter] public EventCallback<T> ValueChanged { get; set; }
 
         /// <summary>
         /// Fires when upper value changed.
         /// </summary>
-        [Parameter] public EventCallback<T?> UpperValueChanged { get; set; }
+        [Parameter] public EventCallback<T> UpperValueChanged { get; set; }
 
         /// <summary>
         /// Value of the component.
         /// </summary>
         [Parameter]
         [Category(CategoryTypes.Slider.Data)]
-        public T? Value
-        {
-            get => Converter.Get(_value);
-            set
-            {
-                var d = Converter.Set(value);
-                if (_value == d)
-                {
-                    return;
-                }
-
-                if (Range && _upperValue != null && Convert.ToDecimal(d) + Convert.ToDecimal(MinDistance) > Convert.ToDecimal(UpperValue))
-                {
-                    _userInvalidatedRange = true;
-                    return;
-                }
-
-                _value = d;
-                ValueChanged.InvokeAsync(value);
-            }
-        }
+        public T Value { get; set; } = T.Zero;
 
         /// <summary>
         /// If range set, holds the higher value.
         /// </summary>
         [Parameter]
         [Category(CategoryTypes.Slider.Data)]
-        public T? UpperValue
-        {
-            get => Converter.Get(_upperValue);
-            set
-            {
-                var d = Converter.Set(value);
-                if (_upperValue == d)
-                {
-                    return;
-                }
-
-                if (Range && _upperValue != null && _value != null && Convert.ToDecimal(d) - Convert.ToDecimal(MinDistance) < Convert.ToDecimal(Value))
-                {
-                    _userInvalidatedRange = true;
-                    return;
-                }
-
-                _upperValue = d;
-                UpperValueChanged.InvokeAsync(value);
-            }
-        }
+        public T UpperValue { get; set; } = T.CreateTruncating(50);
 
         /// <summary>
         /// The color of the component. It supports the Primary, Secondary and Tertiary theme colors.
@@ -227,73 +235,27 @@ namespace MudExtensions
         {
             get
             {
-                if (!Range) return Text;
+                if (!Range) return Converter.Set(_value.Value);
 
                 //if both lower and upper are not set then it is any
-                if ((Convert.ToDouble(Value) == Convert.ToDouble(Min)) &&
-                (Convert.ToDouble(UpperValue) == Convert.ToDouble(Max) || Convert.ToDouble(UpperValue) == 0))
+                if ((Convert.ToDouble(_value.Value) == Convert.ToDouble(Min)) &&
+                (Convert.ToDouble(_upperValue.Value) == Convert.ToDouble(Max) || Convert.ToDouble(_upperValue.Value) == 0))
                     return $"{Min} - {Max}";
 
-                string displayText = $"{Text} - {UpperText}";
+                string displayText = $"{_value.Value} - {_upperValue.Value}";
 
                 //If lower is min or not defined 
-                if (Convert.ToDouble(Value) == Convert.ToDouble(Min))
-                    displayText = $"{Min} - {UpperText}";
+                if (Convert.ToDouble(_value.Value) == Convert.ToDouble(Min))
+                    displayText = $"{Min} - {_upperValue.Value}";
 
                 //if upper is max or not defined
-                if (Convert.ToDouble(UpperValue) == Convert.ToDouble(Max) || Convert.ToDouble(UpperValue) == 0)
-                    displayText = $"{Text} - {Max}";                                
+                if (Convert.ToDouble(_upperValue.Value) == Convert.ToDouble(Max) || Convert.ToDouble(_upperValue.Value) == 0)
+                    displayText = $"{_value.Value} - {Max}";                                
 
                 return displayText;
             }
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        protected string? Text
-        {
-            get => _value;
-            set
-            {
-                if (_value == value)
-                {
-                    return;
-                }
-                if (Range && Convert.ToDecimal(value) + Convert.ToDecimal(MinDistance) > Convert.ToDecimal(UpperValue))
-                {
-                    _userInvalidatedRange = true;
-                    return;
-                }
-
-                _value = value;
-                ValueChanged.InvokeAsync(Value);
-            }
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        protected string? UpperText
-        {
-            get => _upperValue;
-            set
-            {
-                if (_upperValue == value)
-                {
-                    return;
-                }
-
-                if (Range && Convert.ToDecimal(value) - Convert.ToDecimal(MinDistance) < Convert.ToDecimal(Value))
-                {
-                    _userInvalidatedRange = true;
-                    return;
-                }
-
-                _upperValue = value;
-                UpperValueChanged.InvokeAsync(UpperValue);
-            }
-        }
         /// <summary>
         /// If true, displays the Values below the slider
         /// </summary>
@@ -366,32 +328,33 @@ namespace MudExtensions
                 _tickMarkCount = 1 + (int)((max - min) / step);
             }
 
-            if (Range)
-            {
-                //if no Value was set or no Upper Value set, default to min and max
-                if (string.IsNullOrEmpty(_value) && !string.IsNullOrEmpty(_min))
-                {
-                    _value = _min;
-                    ValueChanged.InvokeAsync(Value);
-                }
+            //if (Range)
+            //{
+            //    //if no Value was set or no Upper Value set, default to min and max
+            //    if (string.IsNullOrEmpty(_value) && !string.IsNullOrEmpty(Converter.Set(Min)))
+            //    {
+            //        _value = Converter.Set(Min);
+            //        ValueChanged.InvokeAsync(Value);
+            //    }
 
-                if (string.IsNullOrEmpty(_upperValue) && !string.IsNullOrEmpty(_max))
-                {
-                    _upperValue = _max;
-                    UpperValueChanged.InvokeAsync(UpperValue);
-                }
-            }
+            //    if (string.IsNullOrEmpty(_upperValue) && !string.IsNullOrEmpty(Converter.Set(Max)))
+            //    {
+            //        _upperValue = Converter.Set(Max);
+            //        UpperValueChanged.InvokeAsync(UpperValue);
+            //    }
+            //}
+            base.OnParametersSet();
         }
 
         private double CalculateWidth()
         {
             var min = Convert.ToDouble(Min);
             var max = Convert.ToDouble(Max);
-            var value = Convert.ToDouble(Value);
+            var value = Convert.ToDouble(_value.Value);
 
             if (Range)
             {
-                value = (Convert.ToDouble(UpperValue) + min - Convert.ToDouble(Value));
+                value = (Convert.ToDouble(_upperValue.Value) + min - Convert.ToDouble(_value.Value));
             }
 
             var result = 100.0 * (value - min) / (max - min);
@@ -404,11 +367,32 @@ namespace MudExtensions
         {
             var min = Convert.ToDouble(Min);
             var max = Convert.ToDouble(Max);
-            var value = Convert.ToDouble(Value);
+            var value = Convert.ToDouble(_value.Value);
             var result = 100.0 * (value - min) / (max - min);
             result = Math.Min(Math.Max(0, result), 100);
 
             return Math.Round(result, 2);
         }
+
+        private string GetValueText => _value.Value.ToString(null, CultureInfo.InvariantCulture);
+
+        private string GetUpperValueText => _upperValue.Value.ToString(null, CultureInfo.InvariantCulture);
+
+        private async Task SetValueTextAsync(string? text)
+        {
+            if (T.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var result))
+            {
+                await _value.SetValueAsync(result);
+            }
+        }
+
+        private async Task SetUpperValueTextAsync(string? text)
+        {
+            if (T.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var result))
+            {
+                await _upperValue.SetValueAsync(result);
+            }
+        }
+
     }
 }
