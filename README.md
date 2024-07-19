@@ -37,7 +37,6 @@
 - MudSection
 - MudSpeedDial
 - MudSplitter
-- MudStepper
 - MudSwitchM3
 - MudTeleport
 - MudTextM3
@@ -50,6 +49,7 @@
 
 - MudListExtended
 - MudSelectExtended
+- MudStepperExtended
 - MudTextFieldExtended
 
 ## Playground
@@ -79,6 +79,7 @@ https://codebeam-mudextensions.pages.dev/api
 | 6.2.6 - 6.4.8  |  6.1.9 - 6.2.0  | .NET 6 & 7 |
 | 6.4.9 - 6.6.x  |  6.2.1 - 6.11.1 | .NET 6 & 7 |
 | 6.8.0 =>  |  6.12.0 => | .NET 6 & 7 & 8 |
+| 7.0.0 =>  |  7.3.0 => | .NET 7 & 8 |
 
 ## Installation
 
