@@ -1,20 +1,96 @@
 ﻿@inject NavigationManager NavigationManager
 @namespace MudExtensions.Docs.Components
+@inject MudExtensionsDocsService DocsService
+
+@if (_firstRender == false && _component != null)
+{
+    <FixedTransition Component="_component" FadeIn="false" />
+}
 
 <CascadingValue Value="this" IsFixed="true">
     <MudContainer Class="py-6 px-0">
-        <div class="py-6 d-flex gap-4">
+        <div class="pt-6 pb-2 d-flex flex-wrap align-center gap-4">
             <MudIconButton Class="ms-2 ms-sm-0" Icon="@Icons.Material.Filled.ArrowBack" Variant="Variant.Outlined" Color="Color.Secondary" OnClick="@(() => NavigationManager.NavigateTo("/"))" />
-            <MudText Typo="Typo.h4" Color="Color.Secondary">@Title</MudText>
+            <MudText Typo="Typo.h4" Color="Color.Secondary">@(_component?.Title ?? Title)</MudText>
+            @if (_component != null)
+            {
+                <MudTooltip Text="Source Code" Delay="300" Color="Color.Secondary">
+                    <MudIconButton Icon="@Icons.Material.Filled.Code" Href="@($"https://github.com/CodeBeamOrg/CodeBeam.MudBlazor.Extensions/tree/dev/CodeBeam.MudBlazor.Extensions/Components/{_component?.Title?.Replace("Mud", null)}")" Target="_blank" Color="Color.Secondary" Variant="Variant.Outlined" Size="Size.Small" />
+                </MudTooltip>
+            }
+            <MudSpacer />
+            @if (_component?.IsUtility == true)
+            {
+                <MudChip T="string" Class="cursor-default" Color="Color.Info" Variant="Variant.Outlined" Size="Size.Small">Utility</MudChip>
+            }
+            else if(_component?.IsUnique == false)
+            {
+                <MudTooltip Text="Core library has a similar component." Delay="300" Color="Color.Secondary" Arrow="true">
+                    <MudChip T="string" Class="cursor-default" Color="Color.Secondary" Variant="Variant.Outlined" Size="Size.Small">Extended Component</MudChip>
+                </MudTooltip>
+            }
+            else
+            {
+                <MudTooltip Text="Core library doesn't have a similar component." Delay="300" Color="Color.Secondary" Arrow="true">
+                    <MudChip T="string" Class="cursor-default" Color="Color.Secondary" Variant="Variant.Outlined" Size="Size.Small">Unique Component</MudChip>
+                </MudTooltip>
+            }
+
+            @if (_component?.IsMaterial3 == true)
+            {
+                <MudTooltip Text="Conforms to Material 3 specifications." Delay="300" Color="Color.Info" Arrow="true">
+                    <MudChip T="string" Class="cursor-default" Color="Color.Info" Variant="Variant.Outlined" Size="Size.Small">Material 3</MudChip>
+                </MudTooltip>
+            }
         </div>
+        <MudText Class="ms-2 ms-sm-0 mt-2" Typo="Typo.h6">@_component?.Description</MudText>
+        @if (_component?.RelatedComponents != null)
+        {
+            <MudText Color="Color.Secondary">Related Components: @string.Join(", ", _component.RelatedComponents.Select(x => x.Name.Replace("`1", "")))</MudText>
+        }
+        <MudText></MudText>
         @ChildContent
+
+        @if (_component != null)
+        {
+            <a id="api" class="my-16"><MudDivider Class="my-16"></MudDivider></a>
+            <ExampleCard Title="@($"Api - {Component?.Name.Replace("`1", "")}")" ComponentName="@Component?.Name.Replace("Mud", "")" AliasName="api" ShowCodeSection="false">
+                <DocsApiTable Type="Component" Component="_component" />
+            </ExampleCard>
+        }
     </MudContainer>
 </CascadingValue>
 
 @code{
     [Parameter]
+    public Type? Component { get; set; }
+
+    [Parameter]
     public string? Title { get; set; }
 
     [Parameter]
+    public bool HideApi { get; set; }
+
+    [Parameter]
     public RenderFragment? ChildContent { get; set; }
+
+    private MudExtensionComponentInfo? _component = new();
+    bool _firstRender = false;
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        _component = DocsService.GetAllComponentInfo().FirstOrDefault(x => x?.Title == Component?.Name.Replace("`1", ""));
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+        if (firstRender)
+        {
+            _firstRender = true;
+            await Task.Delay(1000);
+            StateHasChanged();
+        }
+    }
 }
