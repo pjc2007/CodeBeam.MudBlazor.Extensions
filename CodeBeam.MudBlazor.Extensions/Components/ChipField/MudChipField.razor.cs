@@ -199,5 +199,14 @@ namespace MudExtensions
             await _textFieldExtendedReference.FocusAsync();
         }
 
+        /// <summary>
+        /// Clear the text field.
+        /// </summary>       
+        /// <returns></returns>
+        public async Task ClearTextField()
+        {            
+           await _textFieldExtendedReference.Clear();
+        }
+
     }
 }
