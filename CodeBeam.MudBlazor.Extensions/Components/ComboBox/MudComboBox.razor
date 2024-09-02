@@ -23,7 +23,7 @@
                                       Underline="@Underline"
                                       Disabled="@GetDisabledState()" ReadOnly="@GetReadOnlyState()" Error="@Error" ErrorId="@ErrorId"
                                       Clearable="@Clearable" ForceClearable="@(Clearable && HasValue(Value))" OnClearButtonClick="@ClearButtonClickHandlerAsync"
-                                      @attributes="UserAttributes" OnBlur="@HandleOnBlur" ShrinkLabel="@(HasValue(Value) || _isOpen || ShrinkLabel)">
+                                      MaxLength="@MaxLength" @attributes="UserAttributes" OnBlur="@HandleOnBlur" ShrinkLabel="@(HasValue(Value) || _isOpen || ShrinkLabel)">
 
                         <AdornmentEnd>
                             <MudIcon Icon="@_currentIcon" Color="@AdornmentColor" Size="@IconSize" @onclick="OnAdornmentClick" />
